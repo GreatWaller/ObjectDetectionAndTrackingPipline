@@ -1,0 +1,33 @@
+{
+  "Pipelines": [
+
+    {
+      "Id": "Pipeline_3",
+      "VideoCaptureModule": {
+        "Type": "FFmpeg",
+        "Source": "rtsp://192.168.1.140/Cam-15b3a2f4-Profile_1",
+        "Resolution": {
+          "Width": 1920,
+          "Height": 1080
+        }
+      },
+      "DetectionModule": {
+        "Type": "Onnx",
+        "ModelFilePath": "Config/yolov5m.onnx",
+        "LabelFilePath": "Config/labels.txt",
+        "FilterClasses": [ "person" ]
+      },
+      "FeatureExtractor": {
+        "Type": "OSNet",
+        "ModelFilePath": "Config/osnet.onnx"
+      },
+      "TrackingModule": {
+        "Type": "DeepSort",
+        "Lambda": 0.3,
+        "AppearanceWeight": 1.0,
+        "CostThreshold": 0.6
+      },
+      "EventHandlingModule": []
+    }
+  ]
+}
