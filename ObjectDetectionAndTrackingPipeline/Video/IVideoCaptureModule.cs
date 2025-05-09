@@ -1,4 +1,5 @@
 ﻿using OpenCvSharp;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,11 +8,11 @@ using System.Threading.Tasks;
 
 namespace ObjectDetectionAndTrackingPipeline.Video
 {
-    internal interface IVideoCaptureModule
+    internal interface IVideoCaptureModule<out TFrame>
     {
         bool IsOpened { get; }
         void Start();
-        Mat GetFrame();
+        TFrame GetFrame();
         void Release();
     }
 }

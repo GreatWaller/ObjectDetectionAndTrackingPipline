@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
+using SkiaSharp;
 
 namespace ObjectDetectionAndTrackingPipeline.Detection
 {
@@ -20,7 +21,8 @@ namespace ObjectDetectionAndTrackingPipeline.Detection
         private readonly string[] _classLabels;
         private readonly List<int> _filterClassIds;
 
-        public OnnxDetecter(string modelPath, string labelsPath, List<string> classes, int inputWidth = 640, int inputHeight = 640, float confidenceThreshold = 0.6f, float nmsThreshold = 0.4f)
+        public OnnxDetecter(string modelPath, string labelsPath, List<string> classes,
+            float confidenceThreshold = 0.6f, float nmsThreshold = 0.4f, int inputWidth = 640, int inputHeight = 640)
         {
             // Create session options and enable CUDA provider
             var sessionOptions = new SessionOptions();
@@ -76,6 +78,52 @@ namespace ObjectDetectionAndTrackingPipeline.Detection
             // Parse detections
             return ParseDetections(output, frame.Width, frame.Height); ;
         }
+        public List<DetectionResult> Detect(SKBitmap frame)
+        {
+            // Step 1: Preprocess image - Resize and normalize
+            SKBitmap resizedFrame = ResizeImage(frame, _inputWidth, _inputHeight);
+
+            // Step 2: Create input tensor (1, 3, height, width) for RGB
+            var inputTensor = new DenseTensor<float>(new[] { 1, 3, _inputHeight, _inputWidth });
+            for (int y = 0; y < _inputHeight; y++)
+            {
+                for (int x = 0; x < _inputWidth; x++)
+                {
+                    SKColor pixel = resizedFrame.GetPixel(x, y);
+                    inputTensor[0, 0, y, x] = pixel.Red / 255.0f;   // R
+                    inputTensor[0, 1, y, x] = pixel.Green / 255.0f; // G
+                    inputTensor[0, 2, y, x] = pixel.Blue / 255.0f;  // B
+                }
+            }
+
+            // Step 3: Run inference
+            var inputs = new List<NamedOnnxValue> { NamedOnnxValue.CreateFromTensor("images", inputTensor) };
+            using var results = _session.Run(inputs);
+            var output = results.First().AsTensor<float>();
+
+            // Step 4: Parse detections
+            return ParseDetections(output, frame.Width, frame.Height);
+        }
+
+        private SKBitmap ResizeImage(SKBitmap source, int targetWidth, int targetHeight)
+        {
+            // 创建目标尺寸的 SKBitmap
+            var resized = new SKBitmap(targetWidth, targetHeight);
+            using var canvas = new SKCanvas(resized);
+            canvas.Clear(SKColors.Black); // 设置背景色
+
+            // 计算缩放比例，保持宽高比
+            float scale = Math.Min((float)targetWidth / source.Width, (float)targetHeight / source.Height);
+            int scaledWidth = (int)(source.Width * scale);
+            int scaledHeight = (int)(source.Height * scale);
+
+            // 居中绘制
+            var destRect = SKRect.Create((targetWidth - scaledWidth) / 2, (targetHeight - scaledHeight) / 2, scaledWidth, scaledHeight);
+            canvas.DrawBitmap(source, destRect);
+            canvas.Flush();
+
+            return resized;
+        }
 
         private List<DetectionResult> ParseDetections(Tensor<float> output, int originalWidth, int originalHeight)
         {
@@ -126,6 +174,8 @@ namespace ObjectDetectionAndTrackingPipeline.Detection
 
             return indices.Select(index => results[index]).ToList();
         }
+
+
 
         ~OnnxDetecter()
         {

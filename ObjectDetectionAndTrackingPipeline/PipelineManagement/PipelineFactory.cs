@@ -3,6 +3,8 @@ using ObjectDetectionAndTrackingPipeline.Event;
 using ObjectDetectionAndTrackingPipeline.Tracking;
 using ObjectDetectionAndTrackingPipeline.Tracking.DeepSort;
 using ObjectDetectionAndTrackingPipeline.Video;
+using OpenCvSharp;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,24 +15,10 @@ namespace ObjectDetectionAndTrackingPipeline.PipelineManagement
 {
     internal class PipelineFactory
     {
-        public static Pipeline CreatePipeline(PipelineConfig config, CancellationToken token)
+        public static Pipeline<TFrame> CreatePipeline<TFrame>(PipelineConfig config, CancellationToken token)
         {
             // 创建视频捕获模块
-            IVideoCaptureModule videoCapture = config.VideoCaptureModule.Type switch
-            {
-                "Vlc" => new VlcFrameCapture(
-                    config.VideoCaptureModule.Source,
-                    token,
-                    config.VideoCaptureModule.Resolution?.Width ?? 1920,
-                    config.VideoCaptureModule.Resolution?.Height ?? 1080),
-                //"OpenCV" => new OpenCVFrameProvider(config.VideoCaptureModule.Source),
-                "FFmpeg" => new FFmpegVideoCapture(
-                    config.VideoCaptureModule.Source,
-                    token,
-                    config.VideoCaptureModule.Resolution?.Width ?? 1920,
-                    config.VideoCaptureModule.Resolution?.Height ?? 1080),
-                _ => throw new NotSupportedException($"VideoCaptureModule type '{config.VideoCaptureModule.Type}' not supported.")
-            };
+            var videoCapture = VideoCaptureFactory<TFrame>.Create(config.VideoCaptureModule.Type, config, token);
 
             // 创建目标检测模块
             IDetectionModule detectionModule = config.DetectionModule.Type switch
@@ -38,7 +26,8 @@ namespace ObjectDetectionAndTrackingPipeline.PipelineManagement
                 "Onnx" => new OnnxDetecter(
                     config.DetectionModule.ModelFilePath,
                     config.DetectionModule.LabelFilePath,
-                    config.DetectionModule.FilterClasses),
+                    config.DetectionModule.FilterClasses,
+                    config.DetectionModule.ConfidenceThreshold),
                 //"Dummy" => new (),
                 _ => throw new NotSupportedException($"DetectionModule type '{config.DetectionModule.Type}' not supported.")
             };
@@ -82,8 +71,21 @@ namespace ObjectDetectionAndTrackingPipeline.PipelineManagement
                 }
             }
 
-            // 返回组装的 Pipeline
-            return new Pipeline(config.Id, videoCapture, detectionModule, trackingModule, eventProcessor, token);
+            //if (typeof(TFrame) == typeof(Mat))
+            //{
+                // 返回组装的 Pipeline
+                return new Pipeline<TFrame>(config.Id, videoCapture, detectionModule, trackingModule, eventProcessor, token);
+
+            //}
+            //else if (typeof(TFrame) == typeof(SKBitmap))
+            //{
+            //    // 返回组装的 Pipeline
+            //    return (Pipeline<TFrame>)(object)new Pipeline<SKBitmap>(config.Id, videoCaptureSkia, detectionModule, trackingModule, eventProcessor, token);
+            //}
+            //else
+            //{
+            //    throw new NotSupportedException($"Pipeline type '{typeof(TFrame)}' not supported.");
+            //}
         }
     }
 }

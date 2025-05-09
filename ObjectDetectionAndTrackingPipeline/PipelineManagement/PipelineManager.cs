@@ -7,7 +7,7 @@ namespace ObjectDetectionAndTrackingPipeline.PipelineManagement
 {
     internal class PipelineManager
     {
-        private readonly Dictionary<string, Pipeline> _pipelines = new();  // 管道集合
+        private readonly Dictionary<string, IPipeline> _pipelines = new();  // 管道集合
         private readonly Dictionary<string, CancellationTokenSource> _cancellationTokens = new(); // 每个管道的取消令牌
 
         /// <summary>
@@ -15,7 +15,7 @@ namespace ObjectDetectionAndTrackingPipeline.PipelineManagement
         /// </summary>
         /// <param name="id">Pipeline 的唯一标识。</param>
         /// <param name="pipeline">Pipeline 实例。</param>
-        public void AddPipeline(string id, Pipeline pipeline)
+        public void AddPipeline(string id, IPipeline pipeline)
         {
             if (_pipelines.ContainsKey(id))
                 throw new ArgumentException($"Pipeline with ID {id} already exists.");

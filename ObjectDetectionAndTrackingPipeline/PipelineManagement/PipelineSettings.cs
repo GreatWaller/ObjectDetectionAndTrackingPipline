@@ -15,6 +15,7 @@ namespace ObjectDetectionAndTrackingPipeline.PipelineManagement
         public string ModelFilePath { get; set; } // 模型文件路径（可选）
         public string LabelFilePath { get; set; } // 标签文件路径（可选）
         public List<string>? FilterClasses { get; set; } // 需要筛选的类别名称列表
+        public float ConfidenceThreshold { get; set; }
     }
 
     public class FeatureExtractorConfig

@@ -66,7 +66,7 @@ namespace ObjectDetectionAndTrackingPipeline.Tracking.DeepSort
                 detection.Id = track.Id;
                 unmatchedTracks.Remove(track);
             }
-            Console.WriteLine($"Match Pairs: {matchedPairs.Count}");
+            //Console.WriteLine($"Match Pairs: {matchedPairs.Count}");
             // 创建新 Track
             foreach (var (detection, feature) in detections
                 .Zip(features, (d, f) => (d, f))
@@ -109,18 +109,18 @@ namespace ObjectDetectionAndTrackingPipeline.Tracking.DeepSort
                     var appearanceCost = unmatchedTracks[j].CalculateAppearanceDistance(features[i]);
 
                     costMatrix[i, j] = lambda * motionCost   + (1-lambda )* appearanceCost*appearanceWeight; // 权重可调
-                    Console.WriteLine($"CostMatrix[{i},{j}] = {costMatrix[i, j]} ={ motionCost}  + {appearanceCost}");
+                    //Console.WriteLine($"CostMatrix[{i},{j}] = {costMatrix[i, j]} ={motionCost}  + {appearanceCost}");
                 }
             }
 
             // 使用匈牙利算法解决匹配问题
             var matchedIndices = HungarianAlgorithm.Solve(costMatrix);
             // 打印匹配索引
-            Console.WriteLine("Matched Indices:");
-            for (int i = 0; i < matchedIndices.Length; i++)
-            {
-                Console.WriteLine($"Detection {i} -> Track {matchedIndices[i]}");
-            }
+            //Console.WriteLine("Matched Indices:");
+            //for (int i = 0; i < matchedIndices.Length; i++)
+            //{
+            //    Console.WriteLine($"Detection {i} -> Track {matchedIndices[i]}");
+            //}
 
             // 筛选有效匹配
             for (int i = 0; i < matchedIndices.Length; i++)

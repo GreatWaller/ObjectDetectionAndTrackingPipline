@@ -2,20 +2,50 @@
   "Pipelines": [
 
     {
-      "Id": "Pipeline_3",
+      "Id": "Pipeline_1",
       "VideoCaptureModule": {
         "Type": "FFmpeg",
-        "Source": "rtsp://192.168.1.140/Cam-15b3a2f4-Profile_1",
+        "Source": "rtsp://192.168.1.42/HIKVISION-Profile_3",
         "Resolution": {
-          "Width": 1920,
-          "Height": 1080
+          "Width": 704,
+          "Height": 576
         }
       },
       "DetectionModule": {
         "Type": "Onnx",
         "ModelFilePath": "Config/yolov5m.onnx",
         "LabelFilePath": "Config/labels.txt",
-        "FilterClasses": [ "person" ]
+        "FilterClasses": [ "person", "boat" ],
+        "ConfidenceThreshold": 0.5
+      },
+      "FeatureExtractor": {
+        "Type": "OSNet",
+        "ModelFilePath": "Config/osnet.onnx"
+      },
+      "TrackingModule": {
+        "Type": "DeepSort",
+        "Lambda": 0.3,
+        "AppearanceWeight": 1.0,
+        "CostThreshold": 0.6
+      },
+      "EventHandlingModule": []
+    },
+    {
+      "Id": "Pipeline_2",
+      "VideoCaptureModule": {
+        "Type": "FFmpegSkia",
+        "Source": "rtsp://192.168.1.42/HIKVISION-Profile_3",
+        "Resolution": {
+          "Width": 704,
+          "Height": 576
+        }
+      },
+      "DetectionModule": {
+        "Type": "Onnx",
+        "ModelFilePath": "Config/yolov5m.onnx",
+        "LabelFilePath": "Config/labels.txt",
+        "FilterClasses": [ "person", "boat" ],
+        "ConfidenceThreshold": 0.5
       },
       "FeatureExtractor": {
         "Type": "OSNet",

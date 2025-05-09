@@ -1,5 +1,6 @@
 ﻿using LibVLCSharp.Shared;
 using OpenCvSharp;
+using SkiaSharp;
 using System;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ObjectDetectionAndTrackingPipeline.Video
 {
-    internal class VlcFrameCapture : IVideoCaptureModule
+    internal class VlcFrameCapture : IVideoCaptureModule<Mat>
     {
         private readonly LibVLC _libVLC;
         private MediaPlayer _mediaPlayer;

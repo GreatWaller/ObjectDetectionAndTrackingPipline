@@ -1,5 +1,4 @@
-﻿using OpenCvSharp;
-using SkiaSharp;
+﻿using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ObjectDetectionAndTrackingPipeline.Video
 {
-    internal class FFmpegVideoCapture : IVideoCaptureModule<Mat>
+    internal class FFmpegVideoCaptureSkia : IVideoCaptureModule<SKBitmap>
     {
         private readonly string _url;
         private readonly int _width;
@@ -18,14 +17,14 @@ namespace ObjectDetectionAndTrackingPipeline.Video
         private Process _ffmpegProcess;
         private volatile bool _isRunning;
 
-        private Mat _latestFrame;
-        private readonly object _frameLock = new(); // 用于保护 _latestFrame 的线程安全
+        private SKBitmap _latestSkiaFrame;
+        private readonly object _frameLock = new(); // 用于保护 _latestSkiaFrame 的线程安全
 
         private readonly CancellationToken _cancellationToken;
 
         public bool IsOpened { get; private set; }
 
-        public FFmpegVideoCapture(string url, CancellationToken cancellationToken, int width = 1920, int height = 1080)
+        public FFmpegVideoCaptureSkia(string url, CancellationToken cancellationToken, int width = 1920, int height = 1080)
         {
             _url = url;
             _width = width;
@@ -48,11 +47,18 @@ namespace ObjectDetectionAndTrackingPipeline.Video
             _captureThread.Start();
         }
 
-        public Mat GetFrame()
+        public SKBitmap GetFrame()
         {
             lock (_frameLock)
             {
-                return _latestFrame?.Clone(); // 返回最新帧的副本
+                if (_latestSkiaFrame == null)
+                    return null;
+
+                // 返回 SKBitmap 的副本以避免外部修改
+                var copy = new SKBitmap(_width, _height);
+                using var canvas = new SKCanvas(copy);
+                canvas.DrawBitmap(_latestSkiaFrame, 0, 0);
+                return copy;
             }
         }
 
@@ -71,8 +77,8 @@ namespace ObjectDetectionAndTrackingPipeline.Video
 
             lock (_frameLock)
             {
-                _latestFrame?.Dispose();
-                _latestFrame = null;
+                _latestSkiaFrame?.Dispose();
+                _latestSkiaFrame = null;
             }
         }
 
@@ -118,10 +124,27 @@ namespace ObjectDetectionAndTrackingPipeline.Video
                             }
                             bytesRead += read;
                         }
+
                         // 更新最新帧
                         lock (_frameLock)
                         {
-                            _latestFrame = Mat.FromPixelData(_height, _width, MatType.CV_8UC3, buffer);
+                            _latestSkiaFrame?.Dispose(); // 释放旧 SKBitmap
+                            _latestSkiaFrame = new SKBitmap(_width, _height);
+
+                            // 从 BGR24 buffer 构造 SKBitmap
+                            var pixels = new SKColor[_width * _height];
+                            for (int y = 0; y < _height; y++)
+                            {
+                                for (int x = 0; x < _width; x++)
+                                {
+                                    int index = (y * _width + x) * 3;
+                                    byte b = buffer[index];
+                                    byte g = buffer[index + 1];
+                                    byte r = buffer[index + 2];
+                                    pixels[y * _width + x] = new SKColor(r, g, b); // BGR to RGB
+                                }
+                            }
+                            _latestSkiaFrame.Pixels = pixels;
                         }
                     }
                 }
@@ -143,4 +166,3 @@ namespace ObjectDetectionAndTrackingPipeline.Video
         }
     }
 }
-
